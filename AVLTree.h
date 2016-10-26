@@ -84,27 +84,26 @@ public: // Basic functions
         return false;
     }
 
-    void SingleRotate_L(AVLTree &node){
-        AVLTree  rc = node->right;
-        node->right = rc->left;
-        rc->left = node;
-        node = rc;
+    AVLTree SingleRotate_L(AVLTree node){
+        AVLTree k1 = node->right;
+        node->right = k1->left;
+        k1->left = node;
+        return k1;
     }
 
-    void SingleRotate_R(AVLTree &node){
-        AVLTree lc = node->left;
-        node->left = lc->right;
-        lc->right = node;
-        node = lc;
+    AVLTree SingleRotate_R(AVLTree node){
+        AVLTree k1 = node->left;
+        node->left = k1->right;
+        k1->right = node;
+        return k1;
     }
 
-    void LeftBalance(AVLTree & Root){
+    AVLTree LeftBalance(AVLTree & Root){
         AVLTree lc = Root->right;
         switch(lc->bf){
             case RIGHT_HIGH:
                 Root->bf = lc->bf = EQUALLY_HIGH;
-                SingleRotate_L(Root);
-                break;
+                return SingleRotate_L(Root);
             case LEFT_HIGH:
                 AVLTree rd = lc->left;
                 switch (rd->bf){
@@ -121,18 +120,18 @@ public: // Basic functions
                         break;
                 }
                 rd->bf = EQUALLY_HIGH;
-                SingleRotate_R(Root->right);
-                SingleRotate_L(Root);
+
+                Root->right = SingleRotate_R(Root->right);
+                return SingleRotate_L(Root);
         }
     }
 
-    void RightBalance(AVLTree &Root){
+    AVLTree RightBalance(AVLTree &Root){
         AVLTree lc = Root->left;
         switch(lc->bf){
             case LEFT_HIGH:
                 Root->bf = lc->bf = EQUALLY_HIGH;
-                SingleRotate_R(Root);
-                break;
+                return SingleRotate_R(Root);
             case RIGHT_HIGH:
                 AVLTree rd = lc->right;
                 switch (rd->bf){
@@ -149,8 +148,8 @@ public: // Basic functions
                         break;
                 }
                 rd->bf = EQUALLY_HIGH;
-                SingleRotate_L(Root->left);
-                SingleRotate_R(Root);
+                Root->left = SingleRotate_L(Root->left);
+                return SingleRotate_R(Root);
         }
     }
 
@@ -162,11 +161,12 @@ public: // Basic functions
         AVLTree node = root;
         if(!root){
             root = new AVLNode;
-            root->left = this->root->right = nullptr;
+            root->left = root->right = nullptr;
             root->data = data;
             root->bf = EQUALLY_HIGH;
             return true;
         }
+
         while(node){
             path.push(node);
             if(node->data == data)
@@ -195,10 +195,6 @@ public: // Basic functions
                     path.top()->bf = EQUALLY_HIGH;
                     path.top()->right = tmp;
                     break;
-                case RIGHT_HIGH:
-                    LeftBalance(path.top());
-                    taller = false;
-                    break;
             }
         }
         else
@@ -209,10 +205,6 @@ public: // Basic functions
                     taller = true;
                     path.top()->bf = LEFT_HIGH;
                     path.top()->left = tmp;
-                    break;
-                case LEFT_HIGH:
-                    RightBalance(path.top());
-                    taller = false;
                     break;
                 case RIGHT_HIGH:
                     taller = false;
@@ -236,9 +228,17 @@ public: // Basic functions
                             tmp_last->bf = LEFT_HIGH;
                             break;
                         case LEFT_HIGH:
-                            RightBalance(tmp_last);
                             tmp_last->bf = EQUALLY_HIGH;
-                            break;
+                            if(tmp_last == root)
+                                root = RightBalance(tmp_last);
+                            else
+                            {
+                                if(path.top()->left == tmp_last)
+                                    path.top()->left = LeftBalance(tmp_last);
+                                else
+                                    path.top()->right = LeftBalance(tmp_last);
+                            }
+                            return true;
                         case RIGHT_HIGH:
                             tmp_last->bf = EQUALLY_HIGH;
                             break;
@@ -256,9 +256,17 @@ public: // Basic functions
                             tmp_last->bf = EQUALLY_HIGH;
                             break;
                         case RIGHT_HIGH:
-                            LeftBalance(tmp_last);
                             tmp_last->bf = EQUALLY_HIGH;
-                            break;
+                            if(tmp_last == root)
+                                root = LeftBalance(tmp_last);
+                            else
+                            {
+                                if(path.top()->left == tmp_last)
+                                    path.top()->left = LeftBalance(tmp_last);
+                                else
+                                    path.top()->right = LeftBalance(tmp_last);
+                            }
+                            return true;
                     }
                 }
             }
