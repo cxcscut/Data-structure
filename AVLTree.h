@@ -275,6 +275,291 @@ public: // Basic functions
         return true;
     }
 
+    virtual bool DeleteData(const T &data){
+        if(!root) return false;
+        std::stack<AVLTree> path;
+        int direc;
+        bool lower = false;
+        AVLTree node = root,prior = root;
+        if(root->data == data)
+        {
+            delete root;
+            root = nullptr;
+            return true;
+        }
+
+        while(node && node->data != data){
+            path.push(node);
+            prior = node;
+            if(node->data < data) {
+                node = node->right;
+                direc = RIGHT;
+            }
+            if(node->data > data) {
+                node = node->left;
+                direc = LEFT;
+            }
+        }
+
+        if(!node) return false;
+
+        if(!node->left && !node->right)
+        {
+            if(direc == LEFT){
+                prior->left = nullptr;
+                switch (path.top()->bf)
+                {
+                    case EQUALLY_HIGH:
+                        lower = false;
+                        path.top()->bf = RIGHT_HIGH;
+                        break;
+                    case LEFT_HIGH:
+                        lower = true;
+                        path.top()->bf = EQUALLY_HIGH;
+                        break;
+                    case RIGHT_HIGH:
+                        lower = true;
+                        prior->bf = EQUALLY_HIGH;
+                        if(prior == root){
+                            root = LeftBalance(root);
+                        }
+                        else
+                        {
+                            path.pop();
+                            AVLTree  tmp_rotate = path.top();
+                            if(tmp_rotate->left == prior)
+                                tmp_rotate->left = LeftBalance(prior);
+                            else
+                                tmp_rotate->right = LeftBalance(prior);
+                        }
+                        break;
+                }
+            }
+            else {
+                prior->right = nullptr;
+                switch (path.top()->bf)
+                {
+                    case EQUALLY_HIGH:
+                        lower = false;
+                        path.top()->bf = LEFT_HIGH;
+                        break;
+                    case LEFT_HIGH:
+                        lower = true;
+                        prior->bf = EQUALLY_HIGH;
+                        if(prior == root){
+                            root = RightBalance(root);
+                        }
+                        else
+                        {
+                            path.pop();
+                            AVLTree tmp_rotate = path.top();
+                            if(tmp_rotate->left == prior)
+                                tmp_rotate->left = RightBalance(prior);
+                            else
+                                tmp_rotate->right = RightBalance(prior);
+                        }
+                        break;
+                    case RIGHT_HIGH:
+                        lower = true;
+                        path.top()->bf = EQUALLY_HIGH;
+                        break;
+                }
+            }
+            delete node;
+        }
+        else if(node->left && node->right){
+            AVLTree tmp_prior = node->right;
+            AVLTree tmp = tmp_prior->left;
+            path.push(node);
+
+            while(tmp){
+                path.push(tmp_prior);
+                tmp_prior = tmp;
+                tmp = tmp->left;
+            }
+
+            path.pop();
+            path.top()->right = tmp_prior->right;
+            tmp_prior->right = node->right;
+            tmp_prior->left = node->left;
+
+            if(direc == LEFT)
+                prior->left = tmp_prior;
+            else
+                prior->right = tmp_prior;
+            switch (path.top()->bf)
+            {
+                case EQUALLY_HIGH:
+                    lower = false;
+                    path.top()->bf = RIGHT_HIGH;
+                    break;
+                case LEFT_HIGH:
+                    lower = true;
+                    path.top()->bf = EQUALLY_HIGH;
+                    break;
+                case RIGHT_HIGH:
+                    lower = true;
+                    path.top()->bf = EQUALLY_HIGH;
+                    AVLTree tmp_rotate = path.top();
+                    path.pop();
+                    if(path.top() == root)
+                    {
+                        root = LeftBalance(root);
+                    }
+                    else
+                    {
+                        if(tmp_rotate == path.top()->left)
+                            path.top()->left = LeftBalance(tmp_rotate);
+                        else
+                            path.top()->right = LeftBalance(tmp_rotate);
+                    }
+                    break;
+            }
+            direc = LEFT;
+        }
+        else
+        {
+            if(node->left)
+                if(direc == LEFT)
+                    prior->left = node->left;
+                else
+                    prior->right = node->left;
+            if(node->right)
+                if(direc == RIGHT)
+                    prior->right = node->right;
+                else
+                    prior->left = node->right;
+            delete node;
+
+            if(direc == LEFT)
+            {
+                switch (prior->bf)
+                {
+                    case EQUALLY_HIGH:
+                        lower = false;
+                        prior->bf = RIGHT_HIGH;
+                        break;
+                    case LEFT_HIGH:
+                        lower = true;
+                        prior->bf = EQUALLY_HIGH;
+                        break;
+                    case RIGHT_HIGH:
+                        lower = true;
+                        prior->bf = EQUALLY_HIGH;
+                        if(prior == root)
+                        {
+                            root = LeftBalance(root);
+                        }
+                        else
+                        {
+                            path.pop();
+                            AVLTree tmp_rotate = path.top();
+                            if(tmp_rotate->left == prior)
+                                tmp_rotate->left = LeftBalance(prior);
+                            else
+                                tmp_rotate->right = LeftBalance(prior);
+                        }
+                        break;
+                }
+            }
+            else
+            {
+                switch (prior->bf)
+                {
+                    case EQUALLY_HIGH:
+                        lower = false;
+                        prior->bf = LEFT_HIGH;
+                        break;
+                    case LEFT_HIGH:
+                        lower = true;
+                        prior->bf = EQUALLY_HIGH;
+                        if(prior == root)
+                        {
+                            root = RightBalance(root);
+                        }
+                        else
+                        {
+                            path.pop();
+                            AVLTree tmp_rotate = path.top();
+                            if(tmp_rotate->left == prior)
+                                tmp_rotate->left = RightBalance(prior);
+                            else
+                                tmp_rotate->right = RightBalance(prior);
+                        }
+                        break;
+                    case RIGHT_HIGH:
+                        lower = true;
+                        prior->bf = EQUALLY_HIGH;
+                        break;
+                }
+            }
+
+        }
+
+        while(!path.empty())
+        {
+            AVLTree tmp_node = path.top();
+            path.pop();
+            if(lower)
+            {
+                if(direc == LEFT)
+                {
+                    switch (tmp_node->bf)
+                    {
+                        case EQUALLY_HIGH:
+                            tmp_node->bf = RIGHT_HIGH;
+                            break;
+                        case LEFT_HIGH:
+                            tmp_node->bf = EQUALLY_HIGH;
+                            break;
+                        case RIGHT_HIGH:
+                            tmp_node->bf = EQUALLY_HIGH;
+                            if(path.top() == root){
+                                root = LeftBalance(root);
+                            }
+                            else
+                            {
+                                AVLTree tmp_rotate = path.top();
+                                path.pop();
+                                if(path.top()->left == tmp_rotate)
+                                    path.top()->left = LeftBalance(tmp_rotate);
+                                else
+                                    path.top()->right = LeftBalance(tmp_rotate);
+                            }
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (tmp_node->bf)
+                    {
+                        case EQUALLY_HIGH:
+                            tmp_node->bf = LEFT_HIGH;
+                            break;
+                        case LEFT_HIGH:
+                            tmp_node->bf = EQUALLY_HIGH;
+                            if(path.top() == root){
+                                root = RightBalance(root);
+                            }
+                            else
+                            {
+                                AVLTree tmp_rotate = path.top();
+                                path.pop();
+                                if(path.top()->left == tmp_rotate)
+                                    path.top()->left = RightBalance(tmp_rotate);
+                                else
+                                    path.top()->right = RightBalance(tmp_rotate);
+                            }
+                            break;
+                        case RIGHT_HIGH:
+                            tmp_node->bf = EQUALLY_HIGH;
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
     virtual int GetDepth(const AVLTree &root) const
     {
         if(!root) return 0;
